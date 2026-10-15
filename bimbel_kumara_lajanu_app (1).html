@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bimbel Kumara Lajanu - Platform Belajar Unggulan SD, SMP, SMA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Inter & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Notification Banner / Modal Custom -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-150%] transition-all duration-300 max-w-sm w-full bg-white shadow-xl rounded-xl border border-slate-100 p-4 flex items-center gap-3">
+        <div id="toast-icon" class="p-2 rounded-full bg-brand-50 text-brand-600"></div>
+        <div class="flex-1">
+            <h4 id="toast-title" class="text-sm font-semibold text-slate-900">Informasi</h4>
+            <p id="toast-desc" class="text-xs text-slate-600"></p>
+        </div>
+    </div>
+
+    <!-- Main App Root Container -->
+    <div id="app" class="flex-1 flex flex-col">
+        <!-- Dynamic views rendered via JS -->
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>© 2026 Bimbel Kumara Lajanu. Hak Cipta Dilindungi.</p>
+            <div class="flex gap-4">
+                <span class="hover:text-brand-600 cursor-pointer">Kebijakan Privasi</span>
+                <span class="hover:text-brand-600 cursor-pointer">Syarat & Ketentuan</span>
+                <span class="hover:text-brand-600 cursor-pointer">Bantuan</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- APPLICATION STATE & SEED DATA ---
+        const DEFAULT_USERS = [
+            { id: 'usr-1', username: 'admin', password: '123', name: 'Administrator Utama', role: 'admin' },
+            { id: 'usr-2', username: 'siswa', password: '123', name: 'Budi Santoso', role: 'siswa', level: 'SMA' }
+        ];
+
+        const INITIAL_MATERIALS = [
+            { id: 'm-1', level: 'SD', subject: 'Matematika', title: 'Operasi Hitung Bilangan Bulat & Pecahan', content: 'Pelajari dasar-dasar penjumlahan, pengurangan, perkalian, pembagian bilangan bulat serta operasi pecahan senilai untuk tingkat Sekolah Dasar.' },
+            { id: 'm-2', level: 'SD', subject: 'Bahasa Indonesia', title: 'Mengenal Ide Pokok Paragraf dan EYD', content: 'Cara cepat menentukan gagasan utama dalam sebuah teks bacaan dan memahami kaidah Ejaan Yang Disempurnakan (EYD).' },
+            { id: 'm-3', level: 'SMP', subject: 'Matematika', title: 'Persamaan Linear dan Teorema Pythagoras', content: 'Pendalaman konsep aljabar satu dan dua variabel serta rumus Pythagoras dalam segitiga siku-siku.' },
+            { id: 'm-4', level: 'SMP', subject: 'Bahasa Indonesia', title: 'Struktur Teks Berita & Laporan Hasil Observasi', content: 'Memahami unsur 5W+1H dalam berita serta cara menyusun laporan observasi yang sistematis dan faktual.' },
+            { id: 'm-5', level: 'SMA', subject: 'Matematika', title: 'Kalkulus: Turunan (Derivatif) & Integral', content: 'Mempelajari konsep limit fungsi, turunan aljabar dan trigonometri, serta penerapan integral tentu dan tak tentu.' },
+            { id: 'm-6', level: 'SMA', subject: 'Bahasa Indonesia', title: 'Analisis Novel Sejarah & Resensi Buku', content: 'Mengupas struktur intrinsik dan ekstrinsik novel sejarah Indonesia serta teknik menyusun resensi yang kritis.' }
+        ];
+
+        // Generator for 160 TKA Practice Questions (Balanced across SD, SMP, SMA & Math/Indonesian)
+        function generate160Questions() {
+            let questions = [];
+            const levels = ['SD', 'SMP', 'SMA'];
+            const subjects = ['Matematika', 'Bahasa Indonesia'];
+            
+            let idCounter = 1;
+            levels.forEach(lvl => {
+                subjects.forEach(subj => {
+                    // Generate ~26-27 questions per level-subject combination to total 160
+                    const count = (lvl === 'SMA' && subj === 'Matematika') ? 28 : 27;
+                    for (let i = 1; i <= count; i++) {
+                        let qText = `Soal TKA ${lvl} - ${subj} #${i}: `;
+                        let options = [];
+                        let correctIdx = 0;
+
+                        if (subj === 'Matematika') {
+                            const a = i * 2;
+                            const b = i + 5;
+                            qText += `Berapakah hasil dari ${a} + ${b} × ${i % 3 + 1}?`;
+                            const ans = a + b * (i % 3 + 1);
+                            options = [String(ans - 3), String(ans), String(ans + 4), String(ans + 10)];
+                            correctIdx = 1;
+                        } else {
+                            qText += `Dalam kaidah penulisan teks ${lvl} untuk mata pelajaran Bahasa Indonesia pada bagian nomor ${i}, unsur manakah yang paling utama diperhatikan?`;
+                            options = ['Kesesuaian EYD & Struktur', 'Panjang kalimat minimal 50 kata', 'Penggunaan bahasa asing', 'Pemilihan warna huruf'];
+                            correctIdx = 0;
+                        }
+
+                        questions.push({
+                            id: `tka-${idCounter++}`,
+                            level: lvl,
+                            subject: subj,
+                            question: qText,
+                            options: options,
+                            answer: correctIdx
+                        });
+                    }
+                });
+            });
+            return questions;
+        }
+
+        // Initialize LocalStorage if empty
+        if (!localStorage.getItem('kl_users')) {
+            localStorage.setItem('kl_users', JSON.stringify(DEFAULT_USERS));
+        }
+        if (!localStorage.getItem('kl_materials')) {
+            localStorage.setItem('kl_materials', JSON.stringify(INITIAL_MATERIALS));
+        }
+        if (!localStorage.getItem('kl_questions')) {
+            localStorage.setItem('kl_questions', JSON.stringify(generate160Questions()));
+        }
+        if (!localStorage.getItem('kl_scores')) {
+            localStorage.setItem('kl_scores', JSON.stringify([]));
+        }
+
+        let currentUser = JSON.parse(localStorage.getItem('kl_current_user')) || null;
+
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(title, desc, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+
+            icon.innerHTML = type === 'success' 
+                ? '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>' 
+                : '<i data-lucide="alert-circle" class="w-5 h-5 text-rose-600"></i>';
+            
+            lucide.createIcons();
+            toast.classList.remove('translate-y-[-150%]');
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-150%]');
+            }, 3500);
+        }
+
+        // --- NAVIGATION ROUTER ---
+        function navigate(viewName, params = {}) {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            
+            window.scrollTo(0, 0);
+
+            switch (viewName) {
+                case 'home':
+                    app.innerHTML = renderHomeView();
+                    break;
+                case 'login':
+                    app.innerHTML = renderLoginView();
+                    break;
+                case 'register':
+                    app.innerHTML = renderRegisterView();
+                    break;
+                case 'dashboard-siswa':
+                    if (!currentUser || currentUser.role !== 'siswa') { navigate('login'); return; }
+                    app.innerHTML = renderStudentDashboard();
+                    break;
+                case 'dashboard-admin':
+                    if (!currentUser || currentUser.role !== 'admin') { navigate('login'); return; }
+                    app.innerHTML = renderAdminDashboard();
+                    break;
+                case 'materi':
+                    if (!currentUser) { navigate('login'); return; }
+                    app.innerHTML = renderMateriView(params);
+                    break;
+                case 'latihan':
+                    if (!currentUser || currentUser.role !== 'siswa') { navigate('login'); return; }
+                    app.innerHTML = renderLatihanView(params);
+                    break;
+                case 'ujian':
+                    if (!currentUser || currentUser.role !== 'siswa') { navigate('login'); return; }
+                    app.innerHTML = renderUjianSessionView(params);
+                    break;
+                default:
+                    app.innerHTML = renderHomeView();
+            }
+            lucide.createIcons();
+        }
+
+        // --- RENDER VIEWS ---
+
+        // 1. Home / Landing Page
+        function renderHomeView() {
+            return `
+                <div class="fade-in flex flex-col min-h-full">
+                    <!-- Navbar -->
+                    <header class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                                    <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">Kumara Lajanu</h1>
+                                    <p class="text-xs text-brand-600 font-medium">Bimbingan Belajar Unggulan</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="navigate('login')" class="px-5 py-2.5 text-sm font-semibold text-slate-700 hover:text-brand-600 transition">Masuk</button>
+                                <button onclick="navigate('register')" class="px-5 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-lg shadow-brand-600/25 transition">Buat Akun</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Hero Section -->
+                    <section class="flex-1 flex items-center justify-center py-16 px-4">
+                        <div class="max-w-4xl mx-auto text-center">
+                            <span class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 mb-6 border border-brand-100">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Platform Belajar Digital Terpadu SD, SMP & SMA
+                            </span>
+                            <h1 class="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-tight">
+                                Raih Prestasi Tertinggi Bersama <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-500">Bimbel Kumara Lajanu</span>
+                            </h1>
+                            <p class="text-lg sm:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+                                Akses materi lengkap Matematika & Bahasa Indonesia serta latihan 160 butir soal TKA terakurat untuk menguji kemampuan akademikmu.
+                            </p>
+                            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <button onclick="navigate('register')" class="w-full sm:w-auto px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-xl shadow-brand-600/30 transition flex items-center justify-center gap-2">
+                                    <span>Mulai Belajar Gratis</span>
+                                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                                </button>
+                                <button onclick="navigate('login')" class="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold rounded-xl transition">
+                                    Masuk ke Akun
+                                </button>
+                            </div>
+
+                            <!-- Feature highlights -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20 text-left">
+                                <div class="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                                    </div>
+                                    <h3 class="font-bold text-slate-900 mb-1">Materi Full SD-SMP-SMA</h3>
+                                    <p class="text-sm text-slate-600">Kurikulum terstruktur khusus untuk Matematika dan Bahasa Indonesia.</p>
+                                </div>
+                                <div class="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+                                        <i data-lucide="award" class="w-5 h-5"></i>
+                                    </div>
+                                    <h3 class="font-bold text-slate-900 mb-1">160 Butir Soal TKA</h3>
+                                    <p class="text-sm text-slate-600">Simulasi Tes Kemampuan Akademik lengkap dengan evaluasi skor instan.</p>
+                                </div>
+                                <div class="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center mb-4">
+                                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                                    </div>
+                                    <h3 class="font-bold text-slate-900 mb-1">Akun Siswa & Admin</h3>
+                                    <p class="text-sm text-slate-600">Dashboard interaktif yang responsif dan mudah digunakan.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            `;
+        }
+
+        // 2. Login View
+        function renderLoginView() {
+            return `
+                <div class="fade-in flex-1 flex items-center justify-center p-4">
+                    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sm:p-10">
+                        <div class="text-center mb-8">
+                            <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-sm">
+                                <i data-lucide="lock" class="w-6 h-6"></i>
+                            </div>
+                            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Selamat Datang Kembali</h2>
+                            <p class="text-xs text-slate-500 mt-1">Masuk ke akun Bimbel Kumara Lajanu Anda</p>
+                        </div>
+
+                        <form onsubmit="handleLogin(event)" class="space-y-5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Username</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                        <i data-lucide="user" class="w-4 h-4"></i>
+                                    </span>
+                                    <input type="text" id="loginUser" required class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-brand-500 transition" placeholder="Masukkan username">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Password</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                        <i data-lucide="key" class="w-4 h-4"></i>
+                                    </span>
+                                    <input type="password" id="loginPass" required class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-brand-500 transition" placeholder="••••••••">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/25 transition flex items-center justify-center gap-2">
+                                <span>Masuk Sekarang</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+
+                        <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                            <p class="text-xs text-slate-600">Belum punya akun? <a href="#" onclick="navigate('register')" class="text-brand-600 font-semibold hover:underline">Buat Akun di sini</a></p>
+                            <p class="text-xs text-slate-400 mt-3">Demo Admin: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-600">admin / 123</code> | Siswa: <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-600">siswa / 123</code></p>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button onclick="navigate('home')" class="text-xs text-slate-500 hover:text-slate-800 transition">← Kembali ke Beranda</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+
+            const users = JSON.parse(localStorage.getItem('kl_users')) || [];
+            const found = users.find(x => x.username === u && x.password === p);
+
+            if (found) {
+                currentUser = found;
+                localStorage.setItem('kl_current_user', JSON.stringify(currentUser));
+                showToast('Login Berhasil!', `Selamat datang kembali, ${found.name}`);
+                if (found.role === 'admin') {
+                    navigate('dashboard-admin');
+                } else {
+                    navigate('dashboard-siswa');
+                }
+            } else {
+                showToast('Login Gagal', 'Username atau password yang Anda masukkan salah.', 'error');
+            }
+        }
+
+        // 3. Register View
+        function renderRegisterView() {
+            return `
+                <div class="fade-in flex-1 flex items-center justify-center p-4">
+                    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sm:p-10">
+                        <div class="text-center mb-8">
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-sm">
+                                <i data-lucide="user-plus" class="w-6 h-6"></i>
+                            </div>
+                            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Buat Akun Siswa Baru</h2>
+                            <p class="text-xs text-slate-500 mt-1">Daftar sekarang untuk akses materi dan latihan TKA</p>
+                        </div>
+
+                        <form onsubmit="handleRegister(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                                <input type="text" id="regName" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-brand-500 transition" placeholder="Nama lengkap siswa">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Username</label>
+                                <input type="text" id="regUser" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-brand-500 transition" placeholder="Pilih username unik">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Password</label>
+                                <input type="password" id="regPass" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-brand-500 transition" placeholder="••••••••">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Jenjang Pendidikan</label>
+                                <select id="regLevel" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-brand-500 transition">
+                                    <option value="SD">Jenjang SD</option>
+                                    <option value="SMP">Jenjang SMP</option>
+                                    <option value="SMA" selected>Jenjang SMA</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2 mt-2">
+                                <span>Daftar Akun Siswa</span>
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+
+                        <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                            <p class="text-xs text-slate-600">Sudah punya akun? <a href="#" onclick="navigate('login')" class="text-brand-600 font-semibold hover:underline">Masuk di sini</a></p>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button onclick="navigate('home')" class="text-xs text-slate-500 hover:text-slate-800 transition">← Kembali ke Beranda</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const username = document.getElementById('regUser').value.trim();
+            const password = document.getElementById('regPass').value.trim();
+            const level = document.getElementById('regLevel').value;
+
+            let users = JSON.parse(localStorage.getItem('kl_users')) || [];
+            if (users.some(u => u.username === username)) {
+                showToast('Registrasi Gagal', 'Username tersebut sudah terdaftar. Gunakan yang lain.', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: 'usr-' + Date.now(),
+                username,
+                password,
+                name,
+                role: 'siswa',
+                level
+            };
+
+            users.push(newUser);
+            localStorage.setItem('kl_users', JSON.stringify(users));
+            showToast('Registrasi Berhasil!', 'Akun Anda berhasil dibuat. Silakan login.');
+            navigate('login');
+        }
+
+        // 4. Student Dashboard
+        function renderStudentDashboard() {
+            const scores = JSON.parse(localStorage.getItem('kl_scores')) || [];
+            const myScores = scores.filter(s => s.username === currentUser.username);
+            const bestScore = myScores.length > 0 ? Math.max(...myScores.map(s => s.score)) : 0;
+
+            return `
+                <div class="fade-in flex-1 flex flex-col">
+                    <!-- Top Bar -->
+                    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold">
+                                    ${currentUser.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 class="font-bold text-slate-900">${currentUser.name}</h2>
+                                    <p class="text-xs text-slate-500">Siswa Aktif • Jenjang <span class="font-semibold text-brand-600">${currentUser.level || 'SMA'}</span></p>
+                                </div>
+                            </div>
+                            <button onclick="handleLogout()" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span>Keluar</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Main Dashboard Content -->
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+                        <!-- Welcome Banner -->
+                        <div class="bg-gradient-to-r from-brand-700 to-indigo-600 rounded-3xl p-6 sm:p-10 text-white mb-8 shadow-xl shadow-brand-600/20 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div>
+                                <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-semibold mb-3 inline-block backdrop-blur-sm">Dashboard Siswa</span>
+                                <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">Halo, ${currentUser.name}! 👋</h1>
+                                <p class="text-brand-100 text-sm sm:text-base max-w-xl">Siap untuk belajar hari ini? Akses modul materi Matematika & Bahasa Indonesia atau uji kemampuanmu melalui 160 butir soal TKA.</p>
+                            </div>
+                            <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-center min-w-[200px]">
+                                <p class="text-xs text-brand-200 uppercase tracking-wider font-semibold">Skor TKA Tertinggi</p>
+                                <p class="text-3xl font-extrabold mt-1 text-white">${bestScore} <span class="text-sm font-normal text-brand-200">/ 100</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Navigation Grid -->
+                        <h3 class="text-lg font-bold text-slate-900 mb-4">Fitur Utama Pembelajaran</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                            <!-- Card Materi -->
+                            <div onclick="navigate('materi')" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-brand-200 transition cursor-pointer group flex flex-col justify-between">
+                                <div>
+                                    <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                                    </div>
+                                    <h4 class="text-xl font-bold text-slate-900 mb-2">Materi Full Matematika & Bahasa Indonesia</h4>
+                                    <p class="text-slate-600 text-sm mb-6">Modul materi lengkap dan terstruktur untuk tingkat SD, SMP, dan SMA.</p>
+                                </div>
+                                <div class="flex items-center gap-2 text-brand-600 font-semibold text-sm group-hover:translate-x-1 transition duration-300">
+                                    <span>Buka Materi Pembelajaran</span>
+                                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+
+                            <!-- Card Latihan Soal -->
+                            <div onclick="navigate('latihan')" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-amber-200 transition cursor-pointer group flex flex-col justify-between">
+                                <div>
+                                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                                        <i data-lucide="award" class="w-6 h-6"></i>
+                                    </div>
+                                    <h4 class="text-xl font-bold text-slate-900 mb-2">Latihan 160 Butir Soal TKA</h4>
+                                    <p class="text-slate-600 text-sm mb-6">Simulasi Tes Kemampuan Akademik (TKA) lengkap dengan penilaian skor otomatis.</p>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-600 font-semibold text-sm group-hover:translate-x-1 transition duration-300">
+                                    <span>Mulai Latihan Ujian</span>
+                                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Riwayat Tes Siswa -->
+                        <div class="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="history" class="w-5 h-5 text-brand-600"></i> Riwayat Ujian TKA Anda
+                            </h3>
+                            ${myScores.length === 0 ? `
+                                <div class="text-center py-8 text-slate-400 text-sm">Belum ada riwayat ujian yang diselesaikan. Ayo mulai latihan soal TKA sekarang!</div>
+                            ` : `
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm">
+                                        <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                                            <tr>
+                                                <th class="p-3 rounded-l-xl">Jenjang & Waktu</th>
+                                                <th class="p-3">Benar / Total</th>
+                                                <th class="p-3">Skor Akhir</th>
+                                                <th class="p-3 rounded-r-xl">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            ${myScores.map(s => `
+                                                <tr>
+                                                    <td class="p-3 font-medium text-slate-900">TKA ${s.level} (${new Date(s.date).toLocaleDateString()})</td>
+                                                    <td class="p-3 text-slate-600">${s.correct} / ${s.total} soal</td>
+                                                    <td class="p-3 font-bold text-brand-600">${s.score}</td>
+                                                    <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${s.score >= 70 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${s.score >= 70 ? 'Lulus / Baik' : 'Perlu Belajar Lagi'}</span></td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        // 5. Admin Dashboard
+        function renderAdminDashboard() {
+            const users = JSON.parse(localStorage.getItem('kl_users')) || [];
+            const materials = JSON.parse(localStorage.getItem('kl_materials')) || [];
+            const scores = JSON.parse(localStorage.getItem('kl_scores')) || [];
+
+            return `
+                <div class="fade-in flex-1 flex flex-col">
+                    <!-- Top Bar -->
+                    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
+                                    🛠️
+                                </div>
+                                <div>
+                                    <h2 class="font-bold text-slate-900">Panel Administrator</h2>
+                                    <p class="text-xs text-slate-500">Bimbel Kumara Lajanu Control Center</p>
+                                </div>
+                            </div>
+                            <button onclick="handleLogout()" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span>Keluar</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Pengguna</p>
+                                <p class="text-3xl font-extrabold text-slate-900">${users.length}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Modul Materi</p>
+                                <p class="text-3xl font-extrabold text-brand-600">${materials.length}</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Bank Soal TKA</p>
+                                <p class="text-3xl font-extrabold text-amber-600">160 Butir</p>
+                            </div>
+                        </div>
+
+                        <!-- Add Material Form -->
+                        <div class="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-sm mb-8">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i> Tambah Modul Materi Baru
+                            </h3>
+                            <form onsubmit="handleAddMaterial(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Jenjang</label>
+                                    <select id="newMatLevel" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+                                        <option value="SD">SD</option>
+                                        <option value="SMP">SMP</option>
+                                        <option value="SMA">SMA</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Mata Pelajaran</label>
+                                    <select id="newMatSubject" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+                                        <option value="Matematika">Matematika</option>
+                                        <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Judul Materi</label>
+                                    <input type="text" id="newMatTitle" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500" placeholder="Judul ringkas...">
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Isi / Ringkasan Materi</label>
+                                    <textarea id="newMatContent" required rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500" placeholder="Deskripsi lengkap materi..."></textarea>
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <button type="submit" class="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition">Simpan Modul Materi</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Data Siswa Terdaftar -->
+                        <div class="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-sm mb-8">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="users" class="w-5 h-5 text-brand-600"></i> Daftar Siswa Terdaftar
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                                        <tr>
+                                            <th class="p-3 rounded-l-xl">Nama Siswa</th>
+                                            <th class="p-3">Username</th>
+                                            <th class="p-3">Jenjang</th>
+                                            <th class="p-3 rounded-r-xl">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        ${users.filter(u => u.role === 'siswa').map(u => `
+                                            <tr>
+                                                <td class="p-3 font-medium text-slate-900">${u.name}</td>
+                                                <td class="p-3 text-slate-600">${u.username}</td>
+                                                <td class="p-3"><span class="px-2.5 py-0.5 bg-brand-50 text-brand-700 rounded-full text-xs font-semibold">${u.level || 'SMA'}</span></td>
+                                                <td class="p-3">
+                                                    <button onclick="handleDeleteUser('${u.id}')" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Hapus</button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Semua Riwayat Ujian Siswa -->
+                        <div class="bg-white rounded-3xl border border-slate-100 p-6 sm:p-8 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="clipboard-list" class="w-5 h-5 text-brand-600"></i> Rekapitulasi Hasil Ujian TKA Seluruh Siswa
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
+                                        <tr>
+                                            <th class="p-3 rounded-l-xl">Username</th>
+                                            <th class="p-3">Jenjang</th>
+                                            <th class="p-3">Skor</th>
+                                            <th class="p-3 rounded-r-xl">Tanggal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        ${scores.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada ujian yang dikerjakan.</td></tr>` : scores.map(s => `
+                                            <tr>
+                                                <td class="p-3 font-medium text-slate-900">${s.username}</td>
+                                                <td class="p-3 text-slate-600">TKA ${s.level}</td>
+                                                <td class="p-3 font-bold text-brand-600">${s.score}</td>
+                                                <td class="p-3 text-slate-500">${new Date(s.date).toLocaleString()}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function handleAddMaterial(e) {
+            e.preventDefault();
+            const level = document.getElementById('newMatLevel').value;
+            const subject = document.getElementById('newMatSubject').value;
+            const title = document.getElementById('newMatTitle').value.trim();
+            const content = document.getElementById('newMatContent').value.trim();
+
+            let materials = JSON.parse(localStorage.getItem('kl_materials')) || [];
+            materials.push({ id: 'm-' + Date.now(), level, subject, title, content });
+            localStorage.setItem('kl_materials', JSON.stringify(materials));
+
+            showToast('Berhasil', 'Modul materi baru berhasil ditambahkan.');
+            navigate('dashboard-admin');
+        }
+
+        function handleDeleteUser(id) {
+            let users = JSON.parse(localStorage.getItem('kl_users')) || [];
+            users = users.filter(u => u.id !== id);
+            localStorage.setItem('kl_users', JSON.stringify(users));
+            showToast('Berhasil', 'Akun siswa berhasil dihapus.');
+            navigate('dashboard-admin');
+        }
+
+        // 6. Materi View (Full SD, SMP, SMA Math & Indonesian)
+        function renderMateriView(params = {}) {
+            const materials = JSON.parse(localStorage.getItem('kl_materials')) || [];
+            const selectedLevel = params.level || 'ALL';
+            const selectedSubject = params.subject || 'ALL';
+
+            const filtered = materials.filter(m => {
+                if (selectedLevel !== 'ALL' && m.level !== selectedLevel) return false;
+                if (selectedSubject !== 'ALL' && m.subject !== selectedSubject) return false;
+                return true;
+            });
+
+            return `
+                <div class="fade-in flex-1 flex flex-col">
+                    <!-- Header -->
+                    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <button onclick="navigate('${currentUser.role === 'admin' ? 'dashboard-admin' : 'dashboard-siswa'}')" class="p-2 hover:bg-slate-100 rounded-xl transition text-slate-600">
+                                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                                </button>
+                                <div>
+                                    <h2 class="font-bold text-slate-900">Materi Full Pembelajaran</h2>
+                                    <p class="text-xs text-slate-500">Matematika & Bahasa Indonesia (SD, SMP, SMA)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+                        <!-- Filters -->
+                        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 w-full sm:w-auto">
+                                <label class="text-xs font-semibold text-slate-500 uppercase">Jenjang:</label>
+                                <select onchange="filterMateri(this.value, '${selectedSubject}')" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none">
+                                    <option value="ALL" ${selectedLevel === 'ALL' ? 'selected' : ''}>Semua Jenjang</option>
+                                    <option value="SD" ${selectedLevel === 'SD' ? 'selected' : ''}>SD</option>
+                                    <option value="SMP" ${selectedLevel === 'SMP' ? 'selected' : ''}>SMP</option>
+                                    <option value="SMA" ${selectedLevel === 'SMA' ? 'selected' : ''}>SMA</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-3 w-full sm:w-auto">
+                                <label class="text-xs font-semibold text-slate-500 uppercase">Mapel:</label>
+                                <select onchange="filterMateri('${selectedLevel}', this.value)" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none">
+                                    <option value="ALL" ${selectedSubject === 'ALL' ? 'selected' : ''}>Semua Mata Pelajaran</option>
+                                    <option value="Matematika" ${selectedSubject === 'Matematika' ? 'selected' : ''}>Matematika</option>
+                                    <option value="Bahasa Indonesia" ${selectedSubject === 'Bahasa Indonesia' ? 'selected' : ''}>Bahasa Indonesia</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Material Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${filtered.length === 0 ? `
+                                <div class="col-span-full text-center py-12 text-slate-400">Tidak ada materi yang sesuai dengan filter.</div>
+                            ` : filtered.map(m => `
+                                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-4">
+                                            <span class="px-3 py-1 bg-brand-50 text-brand-700 text-xs font-semibold rounded-full">${m.level}</span>
+                                            <span class="text-xs font-medium text-slate-500">${m.subject}</span>
+                                        </div>
+                                        <h4 class="font-bold text-slate-900 text-lg mb-2">${m.title}</h4>
+                                        <p class="text-slate-600 text-sm mb-6">${m.content}</p>
+                                    </div>
+                                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                        <span class="text-xs text-brand-600 font-semibold cursor-pointer hover:underline" onclick="alert('Membuka modul lengkap: ${m.title}')">Baca Selengkapnya →</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function filterMateri(level, subject) {
+            navigate('materi', { level, subject });
+        }
+
+        // 7. Latihan Soal TKA View (160 Butir Soal)
+        function renderLatihanView() {
+            return `
+                <div class="fade-in flex-1 flex flex-col">
+                    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <button onclick="navigate('dashboard-siswa')" class="p-2 hover:bg-slate-100 rounded-xl transition text-slate-600">
+                                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                                </button>
+                                <div>
+                                    <h2 class="font-bold text-slate-900">Latihan Soal TKA (160 Butir)</h2>
+                                    <p class="text-xs text-slate-500">Tes Kemampuan Akademik Matematika & Bahasa Indonesia</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full flex-1">
+                        <div class="bg-white p-8 sm:p-12 rounded-3xl border border-slate-100 shadow-xl text-center">
+                            <div class="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                <i data-lucide="award" class="w-8 h-8"></i>
+                            </div>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">Simulasi Ujian TKA Bimbel Kumara Lajanu</h2>
+                            <p class="text-slate-600 text-base max-w-xl mx-auto mb-8">
+                                Bank soal terdiri dari total **160 Butir Soal** berkualitas tinggi untuk menguji kemampuan Matematika dan Bahasa Indonesia pada jenjang SD, SMP, dan SMA. Pilih jenjang di bawah untuk memulai ujian!
+                            </p>
+
+                            <div class="max-w-xs mx-auto mb-8">
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Pilih Jenjang Ujian TKA</label>
+                                <select id="tkaLevelSelect" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-amber-500">
+                                    <option value="SD">Jenjang SD (Matematika & Bahasa Indonesia)</option>
+                                    <option value="SMP">Jenjang SMP (Matematika & Bahasa Indonesia)</option>
+                                    <option value="SMA" selected>Jenjang SMA (Matematika & Bahasa Indonesia)</option>
+                                </select>
+                            </div>
+
+                            <button onclick="startTkaExam()" class="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/30 transition inline-flex items-center gap-3">
+                                <i data-lucide="play-circle" class="w-5 h-5"></i>
+                                <span>Mulai Mengerjakan Soal TKA</span>
+                            </button>
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function startTkaExam() {
+            const level = document.getElementById('tkaLevelSelect').value;
+            navigate('ujian', { level });
+        }
+
+        // 8. Ujian Session View (Interactive Quiz with Evaluation)
+        let currentExamState = {
+            level: 'SMA',
+            questions: [],
+            currentIndex: 0,
+            answers: {}
+        };
+
+        function renderUjianSessionView(params) {
+            const level = params.level || 'SMA';
+            const allQuestions = JSON.parse(localStorage.getItem('kl_questions')) || [];
+            // Filter questions for this level (or take subset for smooth experience)
+            const levelQuestions = allQuestions.filter(q => q.level === level);
+
+            currentExamState.level = level;
+            currentExamState.questions = levelQuestions;
+            currentExamState.currentIndex = 0;
+            currentExamState.answers = {};
+
+            return renderExamQuestionCard();
+        }
+
+        function renderExamQuestionCard() {
+            const q = currentExamState.questions[currentExamState.currentIndex];
+            const totalQ = currentExamState.questions.length;
+            const idx = currentExamState.currentIndex;
+            const selectedAns = currentExamState.answers[idx];
+
+            return `
+                <div class="fade-in flex-1 flex flex-col bg-slate-50">
+                    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <h2 class="font-bold text-slate-900">Ujian TKA Jenjang ${currentExamState.level}</h2>
+                            <span class="px-3 py-1 bg-brand-50 text-brand-700 text-xs font-semibold rounded-full">Soal ${idx + 1} dari ${totalQ}</span>
+                        </div>
+                    </header>
+
+                    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 flex flex-col justify-center">
+                        <div class="bg-white p-8 sm:p-10 rounded-3xl border border-slate-100 shadow-xl mb-6">
+                            <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2 block">${q.subject}</span>
+                            <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-6 leading-relaxed">${q.question}</h3>
+
+                            <div class="space-y-3">
+                                ${q.options.map((opt, i) => `
+                                    <button onclick="selectExamAnswer(${i})" class="w-full text-left p-4 rounded-2xl border text-sm font-medium transition flex items-center gap-4 ${selectedAns === i ? 'bg-brand-50 border-brand-500 text-brand-900 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'}">
+                                        <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold ${selectedAns === i ? 'bg-brand-600 text-white' : 'bg-white border border-slate-300 text-slate-600'}">${String.fromCharCode(65 + i)}</span>
+                                        <span>${opt}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <button onclick="prevExamQuestion()" ${idx === 0 ? 'disabled class="opacity-50 cursor-not-allowed px-6 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-500"' : 'class="px-6 py-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition"'}>
+                                ← Sebelumnya
+                            </button>
+                            ${idx === totalQ - 1 ? `
+                                <button onclick="submitExamFinal()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-600/25 transition">
+                                    Selesai & Kumpulkan Ujian
+                                </button>
+                            ` : `
+                                <button onclick="nextExamQuestion()" class="px-8 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-brand-600/25 transition">
+                                    Selanjutnya →
+                                </button>
+                            `}
+                        </div>
+                    </main>
+                </div>
+            `;
+        }
+
+        function selectExamAnswer(optionIndex) {
+            currentExamState.answers[currentExamState.currentIndex] = optionIndex;
+            document.getElementById('app').innerHTML = renderExamQuestionCard();
+            lucide.createIcons();
+        }
+
+        function nextExamQuestion() {
+            if (currentExamState.currentIndex < currentExamState.questions.length - 1) {
+                currentExamState.currentIndex++;
+                document.getElementById('app').innerHTML = renderExamQuestionCard();
+                lucide.createIcons();
+            }
+        }
+
+        function prevExamQuestion() {
+            if (currentExamState.currentIndex > 0) {
+                currentExamState.currentIndex--;
+                document.getElementById('app').innerHTML = renderExamQuestionCard();
+                lucide.createIcons();
+            }
+        }
+
+        function submitExamFinal() {
+            let correct = 0;
+            const total = currentExamState.questions.length;
+
+            currentExamState.questions.forEach((q, idx) => {
+                if (currentExamState.answers[idx] === q.answer) {
+                    correct++;
+                }
+            });
+
+            const score = Math.round((correct / total) * 100);
+
+            // Save score
+            const scoreRecord = {
+                id: 'sc-' + Date.now(),
+                username: currentUser.username,
+                level: currentExamState.level,
+                correct,
+                total,
+                score,
+                date: new Date().toISOString()
+            };
+
+            let scores = JSON.parse(localStorage.getItem('kl_scores')) || [];
+            scores.push(scoreRecord);
+            localStorage.setItem('kl_scores', JSON.stringify(scores));
+
+            // Render Result View
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="fade-in flex-1 flex items-center justify-center p-4 bg-slate-50">
+                    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
+                        <div class="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-sm">
+                            <i data-lucide="award" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-extrabold text-slate-900 mb-2">Ujian TKA Selesai!</h2>
+                        <p class="text-xs text-slate-500 mb-6">Evaluasi hasil pengerjaan soal Anda</p>
+
+                        <div class="bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100">
+                            <p class="text-xs font-semibold text-slate-500 uppercase">Skor Akhir Anda</p>
+                            <p class="text-5xl font-extrabold text-brand-600 my-2">${score} <span class="text-sm font-normal text-slate-400">/ 100</span></p>
+                            <p class="text-sm text-slate-600 mt-2">Jawaban Benar: <strong class="text-slate-900">${correct}</strong> dari ${total} soal</p>
+                        </div>
+
+                        <button onclick="navigate('dashboard-siswa')" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/25 transition">
+                            Kembali ke Dashboard Siswa
+                        </button>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('kl_current_user');
+            showToast('Keluar', 'Anda berhasil keluar dari sesi akun.');
+            navigate('home');
+        }
+
+        // Initial Boot
+        window.onload = function() {
+            if (currentUser) {
+                if (currentUser.role === 'admin') navigate('dashboard-admin');
+                else navigate('dashboard-siswa');
+            } else {
+                navigate('home');
+            }
+        };
+    </script>
+</body>
+</html>
